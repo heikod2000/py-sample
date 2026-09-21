@@ -1,0 +1,21 @@
+[project]
+name = "uvsample04"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "cryptography>=50.0.1",
+    "pikepdf>=10.13.0.post1",
+    "pillow>=12.3.0",
+    "pyhanko>=0.37.0",
+    "pymupdf>=1.28.2",
+    "reportlab>=5.0.1",
+]
+
+[tool.uv]
+link-mode = "copy"
+
+[dependency-groups]
+dev = [
+    "pypdf>=6.18.1",
+    "pytest>=9.1.1",
+]
