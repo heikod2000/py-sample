@@ -2,7 +2,7 @@
 
 Erzeugt ein paar typische Beispielbilder (gedrehtes Foto, Bilevel-Scan,
 transparenter Screenshot, unvollständig übertragener Scan, HEIC-Foto) und lässt
-sie durch `preprocess_image_for_ocr` laufen, um Ergebnis und Logausgaben zu zeigen.
+sie durch `preprocess_image_for_ocr` laufen, um Ergebnis und Process-Log zu zeigen.
 """
 
 import logging
@@ -60,7 +60,9 @@ def _heic_photo() -> bytes:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="  [%(levelname)s] %(message)s")
+    # Nur echte Probleme über den Standard-Logger; die normale Schritt-fuer-Schritt-Erzaehlung
+    # kommt jetzt aus dem Process-Log jeder einzelnen Konvertierung (result.log), siehe unten.
+    logging.basicConfig(level=logging.WARNING, format="  [%(levelname)s] %(message)s")
 
     output_dir = Path(__file__).parent.parent / "output" / "image_preprocessing"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -75,13 +77,17 @@ def main() -> None:
 
     for name, source_bytes in samples.items():
         print(f"\n=== {name} ===")
-        result_bytes = preprocess_image_for_ocr(source_bytes, dpi=200)
+        result = preprocess_image_for_ocr(source_bytes, dpi=200)
 
-        result_format = Image.open(BytesIO(result_bytes)).format.lower()
+        result_format = Image.open(BytesIO(result.content)).format.lower()
         extension = "jpg" if result_format == "jpeg" else result_format
         out_path = output_dir / f"{name}.{extension}"
-        out_path.write_bytes(result_bytes)
-        print(f"Ergebnis: {out_path} ({len(source_bytes):,} -> {len(result_bytes):,} Bytes)")
+        out_path.write_bytes(result.content)
+
+        print(f"Ergebnis: {out_path} ({len(source_bytes):,} -> {len(result.content):,} Bytes)")
+        print("Process-Log:")
+        for line in result.log:
+            print(f"  - {line}")
 
 
 if __name__ == "__main__":
