@@ -2,7 +2,7 @@
 
 Erzeugt ein paar typische Beispielbilder (gedrehtes Foto, Bilevel-Scan,
 transparenter Screenshot, unvollständig übertragener Scan, HEIC-Foto) und lässt
-sie durch `preprocess_image_for_ocr` laufen, um Ergebnis und Process-Log zu zeigen.
+sie durch `ImagePreprocessingOperator.execute` laufen, um Ergebnis und Process-Log zu zeigen.
 """
 
 import logging
@@ -12,7 +12,7 @@ from pathlib import Path
 import pillow_heif
 from PIL import Image, ImageDraw
 
-from app.image_preprocessing.image_preprocessing_operator import preprocess_image_for_ocr
+from app.image_preprocessing.image_preprocessing_operator import ImagePreprocessingOperator
 
 
 def _rotated_photo_jpeg() -> bytes:
@@ -64,6 +64,7 @@ def main() -> None:
     # kommt jetzt aus dem Process-Log jeder einzelnen Konvertierung (result.log), siehe unten.
     logging.basicConfig(level=logging.WARNING, format="  [%(levelname)s] %(message)s")
 
+    operator = ImagePreprocessingOperator()
     output_dir = Path(__file__).parent.parent / "output" / "image_preprocessing"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -77,14 +78,17 @@ def main() -> None:
 
     for name, source_bytes in samples.items():
         print(f"\n=== {name} ===")
-        result = preprocess_image_for_ocr(source_bytes, dpi=200)
+        result = operator.execute(source_bytes, dpi=200)
 
         result_format = Image.open(BytesIO(result.content)).format.lower()
         extension = "jpg" if result_format == "jpeg" else result_format
         out_path = output_dir / f"{name}.{extension}"
         out_path.write_bytes(result.content)
 
+        print(f"Erfolg: {result.success}")
         print(f"Ergebnis: {out_path} ({len(source_bytes):,} -> {len(result.content):,} Bytes)")
+        for label, meta in (("before", result.before), ("after", result.after)):
+            print(f"Metadaten {label}: {meta}")
         print("Process-Log:")
         for line in result.log:
             print(f"  - {line}")
